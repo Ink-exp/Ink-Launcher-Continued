@@ -1,15 +1,11 @@
-name: Build & Release InkLauncher
+name: Build InkLauncher APK
 
 on:
   push:
     branches:
       - main
       - master
-  pull_request:
-    branches:
-      - main
-      - master
-  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+  workflow_dispatch:
 
 jobs:
   build:
@@ -25,56 +21,14 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-          cache: 'gradle'
 
-      - name: Grant Execute Permission for Gradle Wrapper
-        run: chmod +x gradlew
-
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+      - name: Setup and Build with Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          arguments: assembleDebug
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: InkLauncher-Debug
           path: app/build/outputs/apk/debug/app-debug.apk
-
-  release:
-    name: Create GitHub Release
-    needs: build
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-          cache: 'gradle'
-
-      - name: Grant Execute Permission for Gradle Wrapper
-        run: chmod +x gradlew
-
-      - name: Build Release APK
-        run: ./gradlew assembleRelease --stacktrace || ./gradlew assembleDebug --stacktrace
-
-      - name: Generate Automatic Release Tag
-        id: tag
-        run: echo "TAG_NAME=v1.0.$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
-
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.tag.outputs.TAG_NAME }}
-          name: "InkLauncher Build ${{ steps.tag.outputs.TAG_NAME }}"
-          draft: false
-          prerelease: false
-          files: |
-            app/build/outputs/apk/debug/app-debug.apk
-            app/build/outputs/apk/release/app-release-unsigned.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
