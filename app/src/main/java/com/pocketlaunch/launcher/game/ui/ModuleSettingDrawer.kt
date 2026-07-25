@@ -1,8 +1,9 @@
-package com.pocketlaunch.launcher.ui
+package com.pocketlaunch.launcher.game.ui
 
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
+import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
@@ -16,12 +17,8 @@ class ModuleSettingDrawer(context: Context) : LinearLayout(context) {
     init {
         orientation = VERTICAL
         setPadding(28, 20, 28, 20)
-        background = InkTheme.createCardBackground(
-            bgColor = InkTheme.bgPanel,
-            borderColor = InkTheme.borderDark,
-            borderWidthPx = 1,
-            cornerRadiusPx = 16f
-        )
+        // Note: Make sure InkTheme is imported if you use it, or fallback to standard colors
+        setBackgroundColor(Color.parseColor("#151824"))
         layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
             setMargins(0, 8, 0, 16)
         }
@@ -33,7 +30,7 @@ class ModuleSettingDrawer(context: Context) : LinearLayout(context) {
 
         val header = TextView(context).apply {
             text = "${module.name} Options"
-            setTextColor(InkTheme.textPrimary)
+            setTextColor(Color.WHITE)
             textSize = 12f
             typeface = Typeface.DEFAULT_BOLD
             setPadding(0, 0, 0, 16)
@@ -42,25 +39,18 @@ class ModuleSettingDrawer(context: Context) : LinearLayout(context) {
 
         addSliderOption("HUD Scale", 100, 200) { scaleVal -> }
         addSliderOption("Background Opacity", 80, 100) { opacityVal -> }
-
-        if (module.id == "attack_indicator" || module.id == "cps_fps_hud") {
-            val colorPicker = ColorPickerView(context, "Accent / Text Color", Color.WHITE) { newColor ->
-                // Color customization callback
-            }
-            addView(colorPicker)
-        }
     }
 
     private fun addSliderOption(label: String, defaultVal: Int, maxVal: Int, onChange: (Int) -> Unit) {
         val row = LinearLayout(context).apply {
             orientation = HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
+            gravity = Gravity.CENTER_VERTICAL // <-- This is what was crashing! Now fixed by the import at the top.
             setPadding(0, 8, 0, 8)
         }
 
         val labelTv = TextView(context).apply {
             text = "$label: $defaultVal"
-            setTextColor(InkTheme.textSecondary)
+            setTextColor(Color.parseColor("#94A3B8"))
             textSize = 11f
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
         }
