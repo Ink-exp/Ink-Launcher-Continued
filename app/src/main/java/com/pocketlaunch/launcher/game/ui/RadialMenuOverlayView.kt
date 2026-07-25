@@ -51,19 +51,20 @@ class RadialMenuOverlayView @JvmOverloads constructor(
 
     private fun setupItems() {
         items.add(RadialItem("ZOOM") {
-            ModuleManager.getModule("zoom")?.toggle()
+            // Passed 'context' to fix the compilation error
+            ModuleManager.getModule("zoom")?.toggle(context)
         })
         items.add(RadialItem("PERSPECTIVE") {
-            ModuleManager.getModule("perspective")?.toggle()
+            ModuleManager.getModule("perspective")?.toggle(context)
         })
         items.add(RadialItem("QUICK DROP") {
-            ModuleManager.getModule("quick_drop")?.toggle()
+            ModuleManager.getModule("quick_drop")?.toggle(context)
         })
         items.add(RadialItem("CROSSHAIR") {
             onOpenCrosshairStudio?.invoke()
         })
         items.add(RadialItem("PACKS") {
-            ModuleManager.getModule("pack_changer")?.toggle()
+            ModuleManager.getModule("pack_changer")?.toggle(context)
         })
     }
 
