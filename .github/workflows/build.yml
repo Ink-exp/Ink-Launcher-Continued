@@ -1,15 +1,18 @@
-name: Build InkLauncher APK
+name: Build & Release InkLauncher
 
 on:
   push:
     branches:
       - main
-      - master
   workflow_dispatch:
 
+# Give GitHub permission to create a Release
+permissions:
+  contents: write
+
 jobs:
-  build:
-    name: Build Android APK
+  build_and_release:
+    name: Build APK and Create Release
     runs-on: ubuntu-latest
 
     steps:
@@ -30,8 +33,16 @@ jobs:
       - name: Build Debug APK
         run: gradle assembleDebug
 
-      - name: Upload Debug APK Artifact
-        uses: actions/upload-artifact@v4
+      - name: Generate Release Tag
+        id: tag
+        run: echo "TAG_NAME=v1.0.$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: InkLauncher-Debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          tag_name: ${{ steps.tag.outputs.TAG_NAME }}
+          name: "InkLauncher Build ${{ steps.tag.outputs.TAG_NAME }}"
+          body: "Automated build of InkLauncher."
+          files: app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
