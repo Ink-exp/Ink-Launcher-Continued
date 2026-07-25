@@ -15,6 +15,8 @@ import android.view.WindowManager
 import android.widget.*
 import com.pocketlaunch.launcher.game.ModuleCategory
 import com.pocketlaunch.launcher.game.ModuleManager
+import com.pocketlaunch.launcher.ui.InkTheme
+import com.pocketlaunch.launcher.ui.UiAnimationUtils
 import kotlin.math.abs
 
 class InkOverlayService : Service() {
@@ -34,27 +36,42 @@ class InkOverlayService : Service() {
     private val textWhite = "#FFFFFF"
     private val textMuted = "#8A92B2"
 
+    // Floating trigger geometry, in px. The glow rings + border are drawn inside the view
+    // bounds, so the box is padded by that much to keep the glass face ~110px as before.
+    private val triggerGlowSpreadPx = 8
+    private val triggerBorderPx = 3
+    private val triggerSizePx = 110 + 2 * (triggerGlowSpreadPx + triggerBorderPx)
+    private val triggerBouncePx = 6
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
-        rootOverlay = FrameLayout(this)
+        rootOverlay = FrameLayout(this).apply {
+            // Let the trigger's release bounce overdraw its layout box instead of being clipped.
+            clipChildren = false
+            clipToPadding = false
+        }
 
-        // Floating Trigger Button
+        // Floating Trigger Button - glassmorphism squircle with an accent glow border
         val triggerBtn = TextView(this).apply {
             text = "INK"
-            setTextColor(Color.parseColor(textWhite))
+            setTextColor(InkTheme.textPrimary)
             textSize = 12f
             typeface = Typeface.MONOSPACE
+            letterSpacing = 0.18f
             gravity = Gravity.CENTER
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor(cardDark))
-                setStroke(2, Color.parseColor(accentPurple))
-                cornerRadius = 24f
+            background = InkTheme.createGlassGlowBackground(
+                cornerRadiusPx = 34f,
+                borderWidthPx = triggerBorderPx,
+                glowSpreadPx = triggerGlowSpreadPx
+            )
+            layoutParams = FrameLayout.LayoutParams(triggerSizePx, triggerSizePx).apply {
+                // Slack so the tap-release bounce is never clipped by the window edge.
+                setMargins(triggerBouncePx, triggerBouncePx, triggerBouncePx, triggerBouncePx)
             }
-            layoutParams = FrameLayout.LayoutParams(110, 110)
         }
 
         // Overlay Main Card
@@ -140,6 +157,7 @@ class InkOverlayService : Service() {
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
                         initX = params.x; initY = params.y; touchX = event.rawX; touchY = event.rawY
+                        UiAnimationUtils.pressTapScale(v)
                         return true
                     }
                     MotionEvent.ACTION_MOVE -> {
@@ -149,11 +167,17 @@ class InkOverlayService : Service() {
                         return true
                     }
                     MotionEvent.ACTION_UP -> {
+                        UiAnimationUtils.releaseTapScale(v)
                         if (abs(event.rawX - touchX) < 12 && abs(event.rawY - touchY) < 12) {
                             isMenuOpen = !isMenuOpen
                             mainPanel.visibility = if (isMenuOpen) View.VISIBLE else View.GONE
                             if (isMenuOpen) renderCategoryModules()
                         }
+                        return true
+                    }
+                    MotionEvent.ACTION_CANCEL -> {
+                        // Without this the button stays shrunk if the gesture gets stolen.
+                        UiAnimationUtils.releaseTapScale(v)
                         return true
                     }
                 }

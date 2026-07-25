@@ -5,6 +5,7 @@ import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 
 /**
@@ -52,6 +53,32 @@ object UiAnimationUtils {
             })
             start()
         }
+    }
+
+    /**
+     * Springs [view] inward while the user holds it down. Every caller must pair this with
+     * [releaseTapScale] on both ACTION_UP and ACTION_CANCEL, otherwise a gesture that gets
+     * stolen (e.g. by the game surface) leaves the view stuck at [pressedScale].
+     */
+    fun pressTapScale(view: View, pressedScale: Float = 0.88f, durationMs: Long = 90L) {
+        view.animate().cancel()
+        view.animate()
+            .scaleX(pressedScale)
+            .scaleY(pressedScale)
+            .setDuration(durationMs)
+            .setInterpolator(DecelerateInterpolator())
+            .start()
+    }
+
+    /** Releases the [pressTapScale] press, settling back to rest with a slight bounce. */
+    fun releaseTapScale(view: View, durationMs: Long = 220L) {
+        view.animate().cancel()
+        view.animate()
+            .scaleX(1.0f)
+            .scaleY(1.0f)
+            .setDuration(durationMs)
+            .setInterpolator(OvershootInterpolator(2.0f))
+            .start()
     }
 
     fun animateHeight(view: View, startHeightPx: Int, endHeightPx: Int, durationMs: Long = 200L) {
