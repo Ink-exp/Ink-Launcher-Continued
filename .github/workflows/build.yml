@@ -1,69 +1,80 @@
-name: Build and Release InkLauncher
+name: Build & Release InkLauncher
 
 on:
   push:
-    branches: [ "main" ]
-    tags:
-      - 'v*'
+    branches:
+      - main
+      - master
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
+      - master
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
 
 jobs:
   build:
+    name: Build Android APK
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
-      with:
-        gradle-version: '8.5'
+      - name: Grant Execute Permission for Gradle Wrapper
+        run: chmod +x gradlew
 
-    - name: Build APK with Gradle
-      run: gradle assembleDebug --stacktrace
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace
 
-    - name: Upload Artifact (Action Summary)
-      uses: actions/upload-artifact@v4
-      with:
-        name: InkLauncher-APK
-        path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload Debug APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: InkLauncher-Debug
+          path: app/build/outputs/apk/debug/app-debug.apk
 
-    - name: Generate Release Tag & Name
-      if: github.event_name == 'push'
-      id: release_info
-      run: |
-        if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-          TAG_NAME="${{ github.ref_name }}"
-          RELEASE_TITLE="InkLauncher Release ${TAG_NAME}"
-        else
-          TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
-          TAG_NAME="v1.0.0-build-${TIMESTAMP}"
-          RELEASE_TITLE="InkLauncher Build ${TIMESTAMP}"
-        fi
-        echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
-        echo "release_title=${RELEASE_TITLE}" >> $GITHUB_OUTPUT
+  release:
+    name: Create GitHub Release
+    needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
 
-    - name: Create New GitHub Release
-      if: github.event_name == 'push'
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ steps.release_info.outputs.tag_name }}
-        name: ${{ steps.release_info.outputs.release_title }}
-        generate_release_notes: true
-        draft: false
-        prerelease: false
-        files: app/build/outputs/apk/debug/app-debug.apk
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Grant Execute Permission for Gradle Wrapper
+        run: chmod +x gradlew
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --stacktrace || ./gradlew assembleDebug --stacktrace
+
+      - name: Generate Automatic Release Tag
+        id: tag
+        run: echo "TAG_NAME=v1.0.$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.TAG_NAME }}
+          name: "InkLauncher Build ${{ steps.tag.outputs.TAG_NAME }}"
+          draft: false
+          prerelease: false
+          files: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/release/app-release-unsigned.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
