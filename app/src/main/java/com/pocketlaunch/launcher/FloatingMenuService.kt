@@ -1,122 +1,116 @@
-package com.pocketlaunch.launcher
+package com.ink.launcher.overlay
 
 import android.app.Service
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.os.IBinder
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
-import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
-import android.widget.LinearLayout
-import android.widget.Switch
-import android.widget.TextView
-import kotlin.math.abs
+import android.widget.ImageView
 
 class FloatingMenuService : Service() {
 
     private lateinit var windowManager: WindowManager
-    private lateinit var rootOverlayView: FrameLayout
-    private lateinit var floatingIcon: TextView
-    private lateinit var expandedMenu: LinearLayout
-    private var isMenuOpen = false
+    private lateinit var floatingView: FrameLayout
+    private lateinit var params: WindowManager.LayoutParams
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
+
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
-        rootOverlayView = FrameLayout(this@FloatingMenuService).apply {
-            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        // 1. Create the container for our floating button
+        floatingView = FrameLayout(this)
+
+        // 2. Configure Window Manager parameters for overlay drawing
+        val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        } else {
+            @Suppress("DEPRECATION")
+            WindowManager.LayoutParams.TYPE_PHONE
         }
 
-        floatingIcon = TextView(this@FloatingMenuService).apply {
-            text = "Ink"
-            setTextColor(Color.WHITE)
-            textSize = 16f
-            typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor("#000000"))
-                setStroke(2, Color.parseColor("#222222"))
-                cornerRadius = 100f
-            }
-            layoutParams = FrameLayout.LayoutParams(130, 130)
-        }
-
-        expandedMenu = LinearLayout(this@FloatingMenuService).apply {
-            orientation = LinearLayout.VERTICAL
-            visibility = View.GONE
-            setPadding(40, 40, 40, 40)
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor("#111111"))
-                setStroke(2, Color.parseColor("#222222"))
-                cornerRadius = 24f
-            }
-            layoutParams = FrameLayout.LayoutParams(550, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                setMargins(20, 150, 0, 0)
-            }
-        }
-
-        expandedMenu.addView(TextView(this@FloatingMenuService).apply {
-            text = "MODULES"
-            setTextColor(Color.parseColor("#888888"))
-            textSize = 12f
-            setPadding(0, 0, 0, 20)
-        })
-
-        expandedMenu.addView(createModuleToggle("Hitbox Expander"))
-        expandedMenu.addView(createModuleToggle("No Render"))
-        expandedMenu.addView(createModuleToggle("ESP"))
-
-        val closeBtn = TextView(this@FloatingMenuService).apply {
-            text = "Close Engine"
-            setTextColor(Color.parseColor("#FF4444"))
-            gravity = Gravity.CENTER
-            setPadding(0, 30, 0, 10)
-            setOnClickListener { stopSelf() }
-        }
-        expandedMenu.addView(closeBtn)
-
-        rootOverlayView.addView(expandedMenu)
-        rootOverlayView.addView(floatingIcon)
-
-        val params = WindowManager.LayoutParams(
+        params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            layoutFlag,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
             x = 100
-            y = 100
+            y = 300
         }
 
-        floatingIcon.setOnTouchListener(object : View.OnTouchListener {
-            private var initX = 0; private var initY = 0; private var initTouchX = 0f; private var initTouchY = 0f
-            override fun onTouch(v: View, event: MotionEvent): Boolean {
+        // 3. Create the Floating Button View
+        val guiButton = ImageView(this).apply {
+            val sizeInPx = (56 * resources.displayMetrics.density).toInt()
+            layoutParams = FrameLayout.LayoutParams(sizeInPx, sizeInPx)
+            setPadding(16, 16, 16, 16)
+
+            // Optional: Set a vector icon or default drawable
+            // android.R.drawable.ic_menu_preferences is used here as a placeholder
+            setImageResource(android.R.drawable.ic_menu_preferences)
+        }
+
+        // 4. Apply Glassmorphism Background & Glowing Cyan Border
+        val glassDrawable = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(Color.parseColor("#CC111827")) // Translucent dark background
+            setStroke(4, Color.parseColor("#00E5FF")) // Glowing Cyan border
+        }
+        guiButton.background = glassDrawable
+
+        // 5. Add Drag & Touch Feedback (Animation + Menu Toggle)
+        guiButton.setOnTouchListener(object : View.OnTouchListener {
+            private var initialX = 0
+            private var initialY = 0
+            private var initialTouchX = 0f
+            private var initialTouchY = 0f
+            private var isClick = true
+
+            override fun onTouch(view: View, event: MotionEvent): Boolean {
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
-                        initX = params.x; initY = params.y; initTouchX = event.rawX; initTouchY = event.rawY
+                        initialX = params.x
+                        initialY = params.y
+                        initialTouchX = event.rawX
+                        initialTouchY = event.rawY
+                        isClick = true
+
+                        // Shrink animation when pressed
+                        view.animate().scaleX(0.92f).scaleY(0.92f).setDuration(80).start()
                         return true
                     }
                     MotionEvent.ACTION_MOVE -> {
-                        params.x = initX + (event.rawX - initTouchX).toInt()
-                        params.y = initY + (event.rawY - initTouchY).toInt()
-                        windowManager.updateViewLayout(rootOverlayView, params)
+                        val dx = (event.rawX - initialTouchX).toInt()
+                        val dy = (event.rawY - initialTouchY).toInt()
+
+                        // If moved more than 5 pixels, flag as drag, not a click
+                        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                            isClick = false
+                        }
+
+                        params.x = initialX + dx
+                        params.y = initialY + dy
+                        windowManager.updateViewLayout(floatingView, params)
                         return true
                     }
-                    MotionEvent.ACTION_UP -> {
-                        if (abs(event.rawX - initTouchX) < 15 && abs(event.rawY - initTouchY) < 15) {
-                            isMenuOpen = !isMenuOpen
-                            expandedMenu.visibility = if (isMenuOpen) View.VISIBLE else View.GONE
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        // Bounce back to normal size
+                        view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(80).start()
+
+                        if (isClick && event.action == MotionEvent.ACTION_UP) {
+                            view.performClick()
+                            openLauncherMenu()
                         }
                         return true
                     }
@@ -125,25 +119,15 @@ class FloatingMenuService : Service() {
             }
         })
 
-        windowManager.addView(rootOverlayView, params)
+        floatingView.addView(guiButton)
+        windowManager.addView(floatingView, params)
     }
 
-    private fun createModuleToggle(name: String): LinearLayout {
-        return LinearLayout(this@FloatingMenuService).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, 20, 0, 20)
-            gravity = Gravity.CENTER_VERTICAL
-            addView(TextView(this@FloatingMenuService).apply {
-                text = name
-                setTextColor(Color.WHITE)
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            })
-            addView(Switch(this@FloatingMenuService))
-        }
+    private fun openLauncherMenu() {
+        // TODO: Trigger your main GUI overlay panel to open here
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        if (::rootOverlayView.isInitialized) windowManager.removeView(rootOverlayView)
-    }
-}
+        if (::floatingView.isInitialized) {
+            windowManager.removeView(floating
