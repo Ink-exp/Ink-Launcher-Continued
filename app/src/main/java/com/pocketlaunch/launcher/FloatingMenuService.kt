@@ -1,4 +1,4 @@
-package com.ink.launcher.overlay
+package com.pocketlaunch.launcher
 
 import android.app.Service
 import android.content.Intent
@@ -55,9 +55,6 @@ class FloatingMenuService : Service() {
             val sizeInPx = (56 * resources.displayMetrics.density).toInt()
             layoutParams = FrameLayout.LayoutParams(sizeInPx, sizeInPx)
             setPadding(16, 16, 16, 16)
-
-            // Optional: Set a vector icon or default drawable
-            // android.R.drawable.ic_menu_preferences is used here as a placeholder
             setImageResource(android.R.drawable.ic_menu_preferences)
         }
 
@@ -94,7 +91,6 @@ class FloatingMenuService : Service() {
                         val dx = (event.rawX - initialTouchX).toInt()
                         val dy = (event.rawY - initialTouchY).toInt()
 
-                        // If moved more than 5 pixels, flag as drag, not a click
                         if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
                             isClick = false
                         }
@@ -105,7 +101,6 @@ class FloatingMenuService : Service() {
                         return true
                     }
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                        // Bounce back to normal size
                         view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(80).start()
 
                         if (isClick && event.action == MotionEvent.ACTION_UP) {
@@ -124,10 +119,13 @@ class FloatingMenuService : Service() {
     }
 
     private fun openLauncherMenu() {
-        // TODO: Trigger your main GUI overlay panel to open here
+        // Trigger overlay panel here
     }
 
     override fun onDestroy() {
         super.onDestroy()
         if (::floatingView.isInitialized) {
-            windowManager.removeView(floating
+            windowManager.removeView(floatingView)
+        }
+    }
+}
