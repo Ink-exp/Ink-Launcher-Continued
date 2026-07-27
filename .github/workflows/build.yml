@@ -42,7 +42,7 @@ jobs:
         with:
           tag_name: ${{ steps.tag.outputs.TAG_NAME }}
           name: "InkLauncher Build ${{ steps.tag.outputs.TAG_NAME }}"
-          body: "Automated build of InkLauncher."
+          body: "New."
           files: app/build/outputs/apk/debug/app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
