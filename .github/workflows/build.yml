@@ -44,8 +44,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.0.0
-          name: "Ink Launcher v1.0.0
+          tag_name: v1.0.0-Beta
+          name: "Ink Launcher v1.0.0-Beta"
           body: |
             ### 🎮 Ink Launcher - Official Beta Release
             
