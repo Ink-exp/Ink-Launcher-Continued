@@ -11,6 +11,10 @@ on:
       - master
   workflow_dispatch:
 
+# THIS IS THE FIX FOR THE 403 ERROR
+permissions:
+  contents: write 
+
 jobs:
   build:
     name: Build APK and Create Release
