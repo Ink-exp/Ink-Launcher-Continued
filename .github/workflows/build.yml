@@ -25,9 +25,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-
-      - name: Setup Gradle Cache
-        uses: actions/setup-gradle@v3
+          cache: 'gradle'
 
       - name: Make Gradle Wrapper Executable
         run: chmod +x ./gradlew
@@ -46,16 +44,16 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.0.0-Beta
-          name: "Ink Launcher v1.0.0-Beta"
+          tag_name: v1.0.0
+          name: "Ink Launcher v1.0.0
           body: |
             ### 🎮 Ink Launcher - Official Beta Release
             
-            **What's New in this Build:**
-            * **Authentic Minecraft Client HUD:** Integrated obsidian charcoal card drawer with green accents.
-            * **Real Game Logic:** Live `options.txt` synchronization for FOV and FPS limits.
-            * **Performance & Overlays:** FPS Boost mode and dynamic touch control triggers.
-            * **Floating Overlay Engine:** Clean, drag-enabled floating pill service.
+            **Included Features:**
+            * Authentic obsidian charcoal HUD drawer with green accents
+            * Real game options synchronization (`options.txt` for FOV & FPS limit)
+            * Performance Mode & dynamic touch control toggles
+            * Floating overlay service
           draft: false
           prerelease: true
           files: ${{ env.APK_FILE }}
