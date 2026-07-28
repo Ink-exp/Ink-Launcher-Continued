@@ -26,13 +26,18 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle Engine
-        uses: gradle/actions/setup-gradle@v3
+      - name: Grant Execute Permission for Gradlew
+        run: chmod +x gradlew || true
 
-      - name: Compile Debug APK
-        run: gradle :app:assembleDebug --stacktrace
+      - name: Build Debug APK with Gradle Wrapper
+        run: |
+          if [ -f "./gradlew" ]; then
+            ./gradlew assembleDebug --no-daemon --stacktrace
+          else
+            gradle assembleDebug --no-daemon --stacktrace
+          fi
 
-      - name: Locate Compiled APK File
+      - name: Locate Compiled APK
         id: find_apk
         run: |
           APK_PATH=$(find . -name "*.apk" | head -n 1)
@@ -48,11 +53,10 @@ jobs:
           body: |
             ### 🎮 Ink Launcher - Official Beta Release
             
-            **Included Engine Upgrades:**
-            * Authentic obsidian charcoal client HUD with green accent highlights
-            * Live `options.txt` sync for FOV and FPS limits
-            * Dynamic touch control toggles and Performance Mode
-            * Floating window service with slide-out drawer
+            * Obsidian HUD drawer with Minecraft green accent styling
+            * Real game options sync (`options.txt` for FOV & FPS)
+            * Performance Boost & touch control toggles
+            * Floating overlay service
           draft: false
           prerelease: true
           files: ${{ env.APK_FILE }}
