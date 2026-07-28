@@ -26,13 +26,13 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle
+      - name: Setup Gradle Engine
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Build Debug APK
-        run: gradle assembleDebug --stacktrace
+      - name: Compile Debug APK
+        run: gradle :app:assembleDebug --stacktrace
 
-      - name: Locate Compiled APK
+      - name: Locate Compiled APK File
         id: find_apk
         run: |
           APK_PATH=$(find . -name "*.apk" | head -n 1)
@@ -48,11 +48,11 @@ jobs:
           body: |
             ### 🎮 Ink Launcher - Official Beta Release
             
-            **Included Features:**
-            * Authentic obsidian charcoal HUD drawer with green accents
-            * Real game options synchronization (`options.txt` for FOV & FPS limit)
-            * Performance Mode & dynamic touch control toggles
-            * Floating overlay service
+            **Included Engine Upgrades:**
+            * Authentic obsidian charcoal client HUD with green accent highlights
+            * Live `options.txt` sync for FOV and FPS limits
+            * Dynamic touch control toggles and Performance Mode
+            * Floating window service with slide-out drawer
           draft: false
           prerelease: true
           files: ${{ env.APK_FILE }}
