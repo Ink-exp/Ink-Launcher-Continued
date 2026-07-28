@@ -2,16 +2,9 @@ name: Build Ink Launcher APK
 
 on:
   push:
-    branches:
-      - main
-      - master
-  pull_request:
-    branches:
-      - main
-      - master
+    branches: [ "**" ] # This ensures it runs on any branch you save to
   workflow_dispatch:
 
-# THIS IS THE FIX FOR THE 403 ERROR
 permissions:
   contents: write 
 
@@ -45,19 +38,19 @@ jobs:
           echo "APK_FILE=$APK_PATH" >> $GITHUB_ENV
           echo "Found APK at: $APK_PATH"
 
+      # THIS IS THE NEW STEP: It saves the file directly to your Actions page
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ink-Launcher-APK
+          path: ${{ env.APK_FILE }}
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.0.0-Beta
-          name: "Ink Launcher v1.0.0-Beta"
-          body: |
-            ### 🎮 Ink Launcher - Official Beta Release
-            
-            * Obsidian HUD drawer with green accent styling
-            * Live options.txt sync for FOV & FPS Limit
-            * Performance Boost & dynamic touch control toggles
-            * Floating overlay service
+          tag_name: "v1.0.0-Build-${{ github.run_number }}"
+          name: "Ink Launcher Beta (Build ${{ github.run_number }})"
           draft: false
           prerelease: true
           files: ${{ env.APK_FILE }}
