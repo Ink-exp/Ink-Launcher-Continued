@@ -1,48 +1,63 @@
-name: Build & Release InkLauncher
+name: Build Ink Launcher APK
 
 on:
   push:
     branches:
       - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
   workflow_dispatch:
 
-# Give GitHub permission to create a Release
-permissions:
-  contents: write
-
 jobs:
-  build_and_release:
+  build:
     name: Build APK and Create Release
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.5'
+      - name: Setup Gradle Cache
+        uses: actions/setup-gradle@v3
+
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x ./gradlew
 
       - name: Build Debug APK
-        run: gradle assembleDebug
+        run: ./gradlew assembleDebug --stacktrace
 
-      - name: Generate Release Tag
-        id: tag
-        run: echo "TAG_NAME=v1.0.$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
+      - name: Locate Compiled APK
+        id: find_apk
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/debug/ -name "*.apk" | head -n 1)
+          echo "APK_FILE=$APK_PATH" >> $GITHUB_ENV
+          echo "Found APK at: $APK_PATH"
 
-      - name: Publish GitHub Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: ${{ steps.tag.outputs.TAG_NAME }}
-          name: "InkLauncher Build ${{ steps.tag.outputs.TAG_NAME }}"
-          body: "New."
-          files: app/build/outputs/apk/debug/app-debug.apk
+          tag_name: v1.0.0-Beta
+          name: "Ink Launcher v1.0.0-Beta"
+          body: |
+            ### 🎮 Ink Launcher - Official Beta Release
+            
+            **What's New in this Build:**
+            * **Authentic Minecraft Client HUD:** Integrated obsidian charcoal card drawer with green accents.
+            * **Real Game Logic:** Live `options.txt` synchronization for FOV and FPS limits.
+            * **Performance & Overlays:** FPS Boost mode and dynamic touch control triggers.
+            * **Floating Overlay Engine:** Clean, drag-enabled floating pill service.
+          draft: false
+          prerelease: true
+          files: ${{ env.APK_FILE }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
