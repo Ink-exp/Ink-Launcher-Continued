@@ -20,19 +20,21 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Compatible JDK (Java 11)
+      - name: Set up Java 11
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '11'
 
-      - name: Make Gradlew Executable
-        run: chmod +x gradlew || true
+      - name: Install Compatible Gradle (7.6.4)
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '7.6.4'
 
       - name: Compile Debug APK
-        run: ./gradlew assembleDebug --no-daemon --no-configuration-cache --stacktrace
+        run: gradle assembleDebug --stacktrace
 
-      - name: Locate Compiled APK
+      - name: Locate APK File
         id: find_apk
         run: |
           APK_PATH=$(find . -name "*.apk" | head -n 1)
