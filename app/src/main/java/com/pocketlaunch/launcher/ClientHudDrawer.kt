@@ -20,7 +20,6 @@ import java.util.Properties
 
 /**
  * Self-Contained Client Engine & HUD Drawer for Ink Launcher
- * Combines configuration state management and authentic Minecraft client UI.
  */
 class ClientHudDrawer(private val context: Context) {
 
@@ -30,14 +29,14 @@ class ClientHudDrawer(private val context: Context) {
     private val clientConfigFile: File = File(clientDir, "client_settings.properties")
     private val clientProperties = Properties()
 
-    // Active Engine State
+    // Engine State
     var isGlassUiEnabled: Boolean = true
     var isCustomControlsEnabled: Boolean = true
     var isPerformanceBoostEnabled: Boolean = false
     var currentFovSetting: Float = 70.0f
     var maxFpsSetting: Int = 120
 
-    // Main HUD Container View
+    // Main HUD Drawer View
     val mainLayout: LinearLayout = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
         layoutParams = ViewGroup.LayoutParams(
@@ -46,10 +45,9 @@ class ClientHudDrawer(private val context: Context) {
         )
         setPadding(24, 32, 24, 32)
 
-        // Authentic Obsidian Dark Card Styling
         val darkBackground = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
-            setColor(Color.parseColor("#E60F0F14"))
+            setColor(Color.parseColor("#E60F0F14")) // Obsidian Charcoal background
             cornerRadius = 16f
             setStroke(2, Color.parseColor("#2A2A36"))
         }
@@ -70,8 +68,6 @@ class ClientHudDrawer(private val context: Context) {
         buildHeader()
         buildModList()
     }
-
-    // --- CONFIG ENGINE LOGIC ---
 
     private fun ensureDirectoryStructure() {
         try {
@@ -177,8 +173,6 @@ class ClientHudDrawer(private val context: Context) {
         }
     }
 
-    // --- AUTHENTIC MINECRAFT UI DRAWING ---
-
     private fun buildHeader() {
         val titleText = TextView(context).apply {
             text = "INK CLIENT"
@@ -189,7 +183,7 @@ class ClientHudDrawer(private val context: Context) {
         }
 
         val subtitleText = TextView(context).apply {
-            text = "v1.8.9 • Client & HUD Engine"
+            text = "v1.8.9 • Client HUD Engine"
             textSize = 11f
             setTextColor(Color.parseColor("#8E8E9B"))
             setPadding(0, 4, 0, 20)
@@ -364,7 +358,7 @@ class ClientHudDrawer(private val context: Context) {
         val valueView = TextView(context).apply {
             text = "$currentValue$unit"
             textSize = 13f
-            setTextColor(Color.parseColor("#55FF55")) // Authentic Minecraft Green accent
+            setTextColor(Color.parseColor("#55FF55"))
             typeface = Typeface.DEFAULT_BOLD
         }
 
